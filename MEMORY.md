@@ -40,6 +40,11 @@
 - 2026-07-05 — Core without AppKit in `Sources/IOTAMonitorCore/` (SwiftPM/tests),
   AppKit app in `App/` (built via `build.sh`/swiftc, outside SwiftPM).
 
+## Install
+- `./build.sh --install` symlinks `/Applications/IOTA Monitor.app` → repo build
+  (Spotlight-findable, always current). After a rebuild: quit + relaunch the
+  running monitor to load new code. Don't move the repo (absolute symlink).
+
 ## Pitfalls / gotchas
 - **Log format = contract**: a wording change on the Macrocosmos side breaks
   parsing silently. Run the `log-format-watcher` agent when in doubt.

@@ -1,7 +1,15 @@
 #!/bin/bash
 # Builds "IOTA Monitor.app" — a standalone menu bar bundle. No dependencies.
+#
+# Usage:
+#   ./build.sh              build the app in place
+#   ./build.sh --install    build, then symlink it into /Applications so Spotlight
+#                           finds it and it stays in sync with every rebuild
 set -euo pipefail
 cd "$(dirname "$0")"
+
+INSTALL=0
+[ "${1:-}" = "--install" ] && INSTALL=1
 
 APP="IOTA Monitor.app"
 BIN="$APP/Contents/MacOS/IOTA Monitor"
@@ -38,4 +46,14 @@ swiftc -O \
 
 codesign --force --sign - "$APP" 2>/dev/null || true
 echo "Built: $APP"
+
+if [ "$INSTALL" = "1" ]; then
+  LINK="/Applications/IOTA Monitor.app"
+  TARGET="$PWD/$APP"
+  if [ -e "$LINK" ] && [ ! -L "$LINK" ]; then
+    echo "Skip install: $LINK exists and is a real bundle, not a symlink. Remove it first."
+  else
+    ln -sfn "$TARGET" "$LINK" && echo "Linked: $LINK -> $TARGET"
+  fi
+fi
 echo "Run:   open \"$APP\"   (or double-click it in Finder)"

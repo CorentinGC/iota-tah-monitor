@@ -46,13 +46,38 @@ only lives in the CLI log. This tool reads that log and surfaces it.
 ```bash
 git clone git@github.com:CorentinGC/iota-tah-monitor.git
 cd iota-tah-monitor
-./build.sh
+./build.sh              # build in place
 open "IOTA Monitor.app"
 ```
 
 `build.sh` compiles the sources into a self-contained `IOTA Monitor.app` bundle
-(ad-hoc signed) and prints the run command. To keep it around, drag the `.app`
-into `/Applications`.
+(ad-hoc signed) and prints the run command.
+
+### Install into /Applications (recommended)
+
+```bash
+./build.sh --install
+```
+
+`--install` symlinks `/Applications/IOTA Monitor.app` → the freshly built bundle
+in this repo. Benefits:
+
+- **Spotlight / Launchpad find it** (Cmd-Space → "IOTA Monitor").
+- **Always current**: `build.sh` rebuilds the bundle at the same path, so the
+  symlink keeps pointing at the latest build — no re-copying. Run `--install`
+  once; plain `./build.sh` afterwards is enough.
+- Works with **Launch at Login** (menu → *Launch at Login*).
+
+Notes / caveats:
+
+- After a rebuild, if the monitor is running, **quit and relaunch it** to load
+  the new version (a running process keeps the old code until restarted).
+- The symlink is an absolute path to this repo — **don't move the repo folder**
+  or the link breaks (re-run `./build.sh --install` to fix it).
+- Remove the link with `rm "/Applications/IOTA Monitor.app"` (deletes only the
+  symlink, not the build).
+- If `/Applications/IOTA Monitor.app` already exists as a real bundle (not a
+  symlink), `--install` refuses to touch it — remove it first.
 
 ## Usage
 

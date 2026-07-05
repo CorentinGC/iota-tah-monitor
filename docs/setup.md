@@ -14,7 +14,21 @@ swift test        # runs the core tests
 open "IOTA Monitor.app"
 ```
 
-To keep the app: drag `IOTA Monitor.app` into `/Applications`.
+## Install into /Applications
+
+```bash
+./build.sh --install
+```
+
+`--install` symlinks `/Applications/IOTA Monitor.app` → the built bundle in the
+repo. Spotlight/Launchpad then find it, and because `build.sh` rebuilds at the
+same path the symlink always points at the latest build (run `--install` once,
+then plain `./build.sh`). Caveats:
+
+- After a rebuild, quit + relaunch the running monitor to load the new version.
+- The symlink is absolute — don't move the repo folder (re-run `--install` to fix).
+- Remove with `rm "/Applications/IOTA Monitor.app"` (link only, not the build).
+- `--install` won't overwrite a real (non-symlink) bundle already at that path.
 
 ## Environment variables
 None. The only external path is the log directory, hard-coded in
