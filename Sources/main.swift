@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 /// Menu bar app: reads the IOTA T@H CLI log every few seconds and renders the
 /// real queue position / state / work status the official UI fails to show.
@@ -6,6 +7,7 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var timer: Timer?
     private let refresh: TimeInterval = 5
+    private let prefs = PreferencesWindowController()
 
     func applicationDidFinishLaunching(_ note: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -75,6 +77,12 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         m.addItem(.separator())
         let open = NSMenuItem(title: "Open log", action: #selector(openLog), keyEquivalent: "l")
         open.target = self; m.addItem(open)
+        let login = NSMenuItem(title: "Lancer au démarrage", action: #selector(toggleLoginQuick), keyEquivalent: "")
+        login.target = self
+        login.state = PreferencesWindowController.launchAtLoginEnabled ? .on : .off
+        m.addItem(login)
+        let pref = NSMenuItem(title: "Préférences…", action: #selector(openPrefs), keyEquivalent: ",")
+        pref.target = self; m.addItem(pref)
         let quit = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self; m.addItem(quit)
         return m
@@ -82,6 +90,20 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     @objc private func openLog() {
         NSWorkspace.shared.open(URL(fileURLWithPath: LogReader.todayLogPath()))
+    }
+
+    @objc private func openPrefs() { prefs.show() }
+
+    /// Quick toggle straight from the menu checkbox (mirrors the panel switch).
+    @objc private func toggleLoginQuick() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled { try service.unregister() }
+            else { try service.register() }
+        } catch {
+            let a = NSAlert(); a.messageText = "Échec du réglage démarrage au login"
+            a.informativeText = error.localizedDescription; a.alertStyle = .warning; a.runModal()
+        }
     }
 
     @objc private func quit() { NSApp.terminate(nil) }

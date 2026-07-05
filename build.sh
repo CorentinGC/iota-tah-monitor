@@ -31,6 +31,7 @@ echo "Compiling…"
 swiftc -O \
   Sources/LogReader.swift \
   Sources/StateParser.swift \
+  Sources/Preferences.swift \
   Sources/main.swift \
   -o "$BIN"
 
