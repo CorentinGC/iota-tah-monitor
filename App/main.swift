@@ -72,7 +72,24 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
             row("Backend: \(s.queueStateErrors)×503 queue_state, \(s.notFoundErrors)×404")
         }
         if let t = s.lastLogTime { row("Updated: \(fmtClock(t))") }
-        if s.phase == .off { row("(official app not running / log stale)") }
+
+        // Official app lifecycle — we drive the official signed app, never bypass it.
+        m.addItem(.separator())
+        func action(_ title: String, _ sel: Selector, key: String = "") {
+            let it = NSMenuItem(title: title, action: sel, keyEquivalent: key)
+            it.target = self; m.addItem(it)
+        }
+        if OfficialApp.isRunning {
+            row("Official app:  running")
+            action("Restart official app", #selector(restartOfficial))
+            action("Quit official app", #selector(quitOfficial))
+        } else {
+            row("Official app:  stopped")
+            action("Launch official app", #selector(launchOfficial))
+            if OfficialApp.orphanWorkerAlive() {
+                action("⚠ Reap orphaned worker", #selector(reapOfficial))
+            }
+        }
 
         m.addItem(.separator())
         let open = NSMenuItem(title: "Open log", action: #selector(openLog), keyEquivalent: "l")
@@ -90,6 +107,16 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     @objc private func openLog() {
         NSWorkspace.shared.open(URL(fileURLWithPath: LogReader.todayLogPath()))
+    }
+
+    @objc private func launchOfficial()  { OfficialApp.launch();  refreshSoon() }
+    @objc private func quitOfficial()     { OfficialApp.quit();    refreshSoon() }
+    @objc private func restartOfficial()  { OfficialApp.restart(); refreshSoon() }
+    @objc private func reapOfficial()     { OfficialApp.reapOrphans(); refreshSoon() }
+
+    /// Re-read + repaint shortly after a lifecycle action, once the app state settled.
+    private func refreshSoon() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.tick() }
     }
 
     @objc private func openPrefs() { prefs.show() }

@@ -32,6 +32,7 @@ swiftc -O \
   Sources/IOTAMonitorCore/LogReader.swift \
   Sources/IOTAMonitorCore/StateParser.swift \
   App/Preferences.swift \
+  App/OfficialApp.swift \
   App/main.swift \
   -o "$BIN"
 
