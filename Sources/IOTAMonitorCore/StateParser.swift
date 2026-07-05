@@ -32,6 +32,9 @@ extension MinerState {
 /// Turns a log tail into a MinerState. Defensive: anything unrecognized falls
 /// back to the last raw line and never throws.
 enum StateParser {
+    /// Trend is computed over this recent slice of the tail, not the whole window.
+    private static let recentTrendWindow: TimeInterval = 600   // 10 minutes
+
     private static let lineTimeFmt: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -92,11 +95,17 @@ enum StateParser {
             }
         }
 
-        // Position + trend.
-        if let last = samples.last { s.position = last.pos }
-        if let first = samples.first, let last = samples.last, samples.count >= 2 {
-            let mins = last.at.timeIntervalSince(first.at) / 60.0
-            if mins > 0.1 { s.trendPerMin = Double(last.pos - first.pos) / mins }
+        // Position + trend. Compute the trend over a RECENT window only: the tail
+        // can span an hour and contain an older restart bump, whose first→last
+        // slope washes out the current direction the user actually sees.
+        if let last = samples.last {
+            s.position = last.pos
+            let cutoff = last.at.addingTimeInterval(-recentTrendWindow)
+            let recent = samples.filter { $0.at >= cutoff }
+            if let firstRecent = recent.first, recent.count >= 2 {
+                let mins = last.at.timeIntervalSince(firstRecent.at) / 60.0
+                if mins > 0.1 { s.trendPerMin = Double(last.pos - firstRecent.pos) / mins }
+            }
         }
 
         // Timing.

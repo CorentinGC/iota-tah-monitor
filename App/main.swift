@@ -74,8 +74,8 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private func arrow(_ trend: Double?) -> String {
         guard let t = trend else { return "" }
-        if t < -0.5 { return " ▼" }   // advancing toward the front (good)
-        if t > 0.5  { return " ▲" }   // falling back (bad)
+        if t < -0.15 { return " ▼" }   // advancing toward the front (good)
+        if t > 0.15  { return " ▲" }   // falling back (bad)
         return " ="
     }
 

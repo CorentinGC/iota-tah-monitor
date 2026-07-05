@@ -67,6 +67,24 @@ final class StateParserTests: XCTestCase {
         XCTAssertNil(s.etaMinutesToFront)
     }
 
+    func testTrendUsesRecentWindowNotWholeTail() {
+        // Older restart bump (up to 1564) then a steady recent descent. First→last
+        // of the whole tail is nearly flat, but the recent trend is clearly down.
+        let log = """
+        [2026-07-05 17:48:00.000] [info]  x - response: {'status': 'queued', 'position': 1554}
+        [2026-07-05 17:52:00.000] [info]  x - response: {'status': 'queued', 'position': 1564}
+        [2026-07-05 17:55:00.000] [info]  x - response: {'status': 'queued', 'position': 1560}
+        [2026-07-05 17:57:00.000] [info]  x - response: {'status': 'queued', 'position': 1558}
+        [2026-07-05 17:58:00.000] [info]  x - response: {'status': 'queued', 'position': 1556}
+        [2026-07-05 17:59:00.000] [info]  x - response: {'status': 'queued', 'position': 1554}
+        [2026-07-05 17:59:40.000] [info]  x - response: {'status': 'queued', 'position': 1553}
+        """
+        let s = StateParser.parse(text: log, now: date("2026-07-05 18:00:00.000"))
+        XCTAssertEqual(s.position, 1553)
+        XCTAssertNotNil(s.trendPerMin)
+        XCTAssertLessThan(s.trendPerMin!, -0.5)   // recent descent, not the flat whole-tail slope
+    }
+
     func testStaleLogFallsBackToOff() {
         // Same log read 24 min later: last line is older than the 120 s threshold.
         let s = StateParser.parse(text: queuedLog, now: date("2026-07-05 18:10:00.000"))

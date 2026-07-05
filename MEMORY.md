@@ -49,6 +49,9 @@
   running monitor to load new code. Don't move the repo (absolute symlink).
 
 ## Pitfalls / gotchas
+- **Trend = recent window (10 min), not whole tail.** The 64 KB tail can hold an
+  older restart bump; first→last slope over it washes out the current direction.
+  `StateParser.recentTrendWindow` bounds it. Arrow deadband ±0.15/min.
 - **Log format = contract**: a wording change on the Macrocosmos side breaks
   parsing silently. Run the `log-format-watcher` agent when in doubt.
 - Restarting the official app = new `queue_id` = back of the queue. Do not restart.
