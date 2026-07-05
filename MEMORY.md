@@ -4,7 +4,8 @@
 > Concise (< 150 lines). Detailed docs → `llms.txt` / `docs/`.
 
 ## Current state
-- Working v1: menu bar shows position/state/work/speedtest/backend,
+- Working v1: menu bar shows a colored status dot (🔴 off · 🟡 queued · 🟢 working,
+  non-template `NSImage`) + compact text, plus position/state/work/speedtest/backend,
   *launch at login* toggle (`SMAppService`) + Preferences window.
 - Official-app lifecycle control (`App/OfficialApp.swift`): Launch / Quit /
   Restart the official signed app + reap the `main_pool` workers it orphans on

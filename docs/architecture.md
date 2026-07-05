@@ -35,8 +35,10 @@ SwiftPM only knows about the core + the tests.
 2. `StateParser.parse(text:now:)` → `MinerState { position, trendPerMin, phase,
    workLine, speedtestOk, queueStateErrors, notFoundErrors, uptime, lastLogTime,
    lastRawLine }`.
-3. `MenuBarApp` maps `phase` → title (`⛏ <pos> ▼/▲`, `off`, `…`, `▶︎`, `?`) and
-   builds the drop-down menu.
+3. `MenuBarApp` maps `phase` → a colored status dot (🔴 off · 🟡 queued /
+   transitional · 🟢 working, drawn as a non-template `NSImage`) plus compact
+   title text (`<pos> ▼/▲`, `working`, `off`, `…`), and builds the drop-down menu
+   (status rows + official-app lifecycle: Launch / Quit / Restart / reap orphans).
 
 ## Structural decisions
 - **Log-only, no ws**: the ws token for `127.0.0.1:8010` rotates on every

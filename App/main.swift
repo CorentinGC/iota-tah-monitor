@@ -20,8 +20,34 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private func tick() {
         let state = read()
-        statusItem.button?.title = title(for: state)
+        if let b = statusItem.button {
+            b.image = dot(statusColor(for: state.phase))
+            b.imagePosition = .imageLeading
+            b.title = title(for: state)
+        }
         statusItem.menu = buildMenu(for: state)
+    }
+
+    /// red = off · yellow = waiting for a lot (queued / transitional) · green = working.
+    private func statusColor(for phase: Phase) -> NSColor {
+        switch phase {
+        case .working:                          return .systemGreen
+        case .queued, .starting, .speedtest, .resetting: return .systemYellow
+        case .off, .error:                      return .systemRed
+        case .unknown:                          return .systemGray
+        }
+    }
+
+    /// A small filled dot in menu-bar color (non-template so it keeps its color).
+    private func dot(_ color: NSColor) -> NSImage {
+        let d: CGFloat = 9
+        let img = NSImage(size: NSSize(width: d, height: d))
+        img.lockFocus()
+        color.setFill()
+        NSBezierPath(ovalIn: NSRect(x: 0, y: 0, width: d, height: d)).fill()
+        img.unlockFocus()
+        img.isTemplate = false
+        return img
     }
 
     private func read() -> MinerState {
@@ -35,14 +61,14 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private func title(for s: MinerState) -> String {
         switch s.phase {
-        case .off:      return "⛏ off"
-        case .working:  return "⛏ ▶︎"
+        case .off:      return "off"
+        case .working:  return "working"
         case .queued:
-            if let p = s.position { return "⛏ \(p)\(arrow(s.trendPerMin))" }
-            return "⛏ queued"
-        case .speedtest, .starting, .resetting: return "⛏ …"
-        case .error:    return "⛏ ⚠"
-        case .unknown:  return "⛏ ?"
+            if let p = s.position { return "\(p)\(arrow(s.trendPerMin))" }
+            return "queued"
+        case .speedtest, .starting, .resetting: return "…"
+        case .error:    return "⚠"
+        case .unknown:  return "?"
         }
     }
 
