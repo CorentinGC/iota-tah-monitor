@@ -140,7 +140,7 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openLog() {
-        NSWorkspace.shared.open(URL(fileURLWithPath: LogReader.todayLogPath()))
+        NSWorkspace.shared.open(URL(fileURLWithPath: LogReader.currentLogPath()))
     }
 
     @objc private func launchOfficial()  { OfficialApp.launch();  refreshSoon() }

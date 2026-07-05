@@ -1,7 +1,10 @@
 import Foundation
 
-/// Resolves and tail-reads the IOTA "Train at Home" CLI log for the current day.
-/// Read-only. Handles a missing/empty file and date rotation at midnight.
+/// Resolves and tail-reads the IOTA "Train at Home" CLI log. Read-only. Handles a
+/// missing/empty file. The official app names its log by launch date and does NOT
+/// roll over at midnight, so a session started yesterday keeps writing to
+/// yesterday's file today — we therefore read the most recently written log, not
+/// strictly today's.
 struct LogReader {
     static let logDir = ("~/Library/Logs/IOTA Train at Home" as NSString).expandingTildeInPath
     static let tailBytes = 64 * 1024
@@ -14,14 +17,30 @@ struct LogReader {
         return (logDir as NSString).appendingPathComponent("\(fmt.string(from: now))-cli.log")
     }
 
+    /// The most recently modified `*-cli.log` in `dir` — the one being written now.
+    /// nil when the directory can't be listed or holds no cli log.
+    static func latestLogPath(in dir: String = logDir) -> String? {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(atPath: dir) else { return nil }
+        let candidates = items.filter { $0.hasSuffix("-cli.log") }.compactMap { name -> (String, Date)? in
+            let p = (dir as NSString).appendingPathComponent(name)
+            guard let d = (try? fm.attributesOfItem(atPath: p)[.modificationDate]) as? Date else { return nil }
+            return (p, d)
+        }
+        return candidates.max { $0.1 < $1.1 }?.0
+    }
+
+    /// The log to read now: the latest written one, falling back to today's name.
+    static func currentLogPath() -> String { latestLogPath() ?? todayLogPath() }
+
     enum ReadResult {
         case ok(text: String, mtime: Date)   // tail content + file modification time
         case empty                            // file exists but 0 bytes
-        case missing                          // no file for today
+        case missing                          // no cli log found
     }
 
-    /// Reads the last `tailBytes` of today's log without loading the whole file.
-    static func readTail(path: String = todayLogPath()) -> ReadResult {
+    /// Reads the last `tailBytes` of the current log without loading the whole file.
+    static func readTail(path: String = currentLogPath()) -> ReadResult {
         let fm = FileManager.default
         guard fm.fileExists(atPath: path) else { return .missing }
 
