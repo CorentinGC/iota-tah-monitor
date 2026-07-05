@@ -17,6 +17,18 @@ struct MinerState {
     var lastRawLine: String = ""
 }
 
+extension MinerState {
+    /// Estimated minutes until reaching the front of the queue (position 0),
+    /// from the current position and the advance rate. `nil` when not queued or
+    /// not advancing fast enough to estimate (a rough figure, rate is noisy).
+    var etaMinutesToFront: Double? {
+        guard phase == .queued, let pos = position, let trend = trendPerMin else { return nil }
+        let advancePerMin = -trend                 // positive when the position drops
+        guard advancePerMin >= 0.1 else { return nil }
+        return Double(pos) / advancePerMin
+    }
+}
+
 /// Turns a log tail into a MinerState. Defensive: anything unrecognized falls
 /// back to the last raw line and never throws.
 enum StateParser {

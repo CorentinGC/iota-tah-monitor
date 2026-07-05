@@ -7,6 +7,9 @@
 - Working v1: menu bar shows a colored status dot (🔴 off · 🟡 queued · 🟢 working,
   non-template `NSImage`) + compact text, plus position/state/work/speedtest/backend,
   *launch at login* toggle (`SMAppService`) + Preferences window.
+- Detail menu shows a **queue ETA** (`MinerState.etaMinutesToFront`: position ÷
+  advance rate; nil when not advancing) + a **Rebuild & restart** item (runs
+  `build.sh` next to the bundle, then relaunches).
 - Official-app lifecycle control (`App/OfficialApp.swift`): Launch / Quit /
   Restart the official signed app + reap the `main_pool` workers it orphans on
   quit (a bug in its own will-quit cleanup). Launch uses `open -gj` (background,

@@ -89,6 +89,10 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
             if let t = s.trendPerMin { line += String(format: "  (%+.1f/min)", t) }
             row(line)
         }
+        if s.phase == .queued {
+            if let eta = s.etaMinutesToFront { row("ETA:     \(fmtEta(eta))") }
+            else { row("ETA:     — (queue not advancing)") }
+        }
         if let up = s.uptime { row("Since:   \(fmtDuration(up))") }
         row("Work:    \(s.workLine ?? "idle (not assigned)")")
         if let ok = s.speedtestOk {
@@ -126,6 +130,10 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         m.addItem(login)
         let pref = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         pref.target = self; m.addItem(pref)
+        if repoDir() != nil {
+            let rb = NSMenuItem(title: "Rebuild & restart", action: #selector(rebuildAndRestart), keyEquivalent: "r")
+            rb.target = self; m.addItem(rb)
+        }
         let quit = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self; m.addItem(quit)
         return m
@@ -161,11 +169,64 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
 
     @objc private func quit() { NSApp.terminate(nil) }
 
+    // MARK: - Rebuild & restart
+
+    /// Repo directory holding `build.sh`, next to our (symlink-resolved) bundle.
+    /// nil when the app was copied away from its source tree.
+    private func repoDir() -> String? {
+        let dir = Bundle.main.bundleURL.resolvingSymlinksInPath().deletingLastPathComponent()
+        return FileManager.default.fileExists(atPath: dir.appendingPathComponent("build.sh").path) ? dir.path : nil
+    }
+
+    @objc private func rebuildAndRestart() {
+        guard let repo = repoDir() else { return }
+        DispatchQueue.global().async {
+            let result = self.runBuild(in: repo)
+            DispatchQueue.main.async {
+                guard result.status == 0 else {
+                    let a = NSAlert(); a.messageText = "Rebuild failed"
+                    a.informativeText = String(result.out.suffix(700)); a.alertStyle = .warning; a.runModal()
+                    return
+                }
+                // Relaunch the freshly built bundle after we exit.
+                let bundle = Bundle.main.bundleURL.resolvingSymlinksInPath().path
+                let relaunch = Process()
+                relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+                relaunch.arguments = ["-c", "sleep 1; open \"\(bundle)\""]
+                try? relaunch.run()
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    private func runBuild(in repo: String) -> (status: Int32, out: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/bash")
+        p.arguments = ["build.sh"]
+        p.currentDirectoryURL = URL(fileURLWithPath: repo)
+        let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
+        do {
+            try p.run(); p.waitUntilExit()
+            let out = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            return (p.terminationStatus, out)
+        } catch { return (-1, "\(error)") }
+    }
+
     private func fmtDuration(_ t: TimeInterval) -> String {
         let s = Int(t); return String(format: "%02d:%02d:%02d", s/3600, (s%3600)/60, s%60)
     }
     private func fmtClock(_ d: Date) -> String {
         let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f.string(from: d)
+    }
+
+    /// "~8h40m  (→ Sun 6 Jul 03:20)" — rough duration + absolute target time.
+    private func fmtEta(_ minutes: Double) -> String {
+        let h = Int(minutes) / 60, m = Int(minutes) % 60
+        let dur = h > 0 ? "\(h)h\(String(format: "%02d", m))m" : "\(m)m"
+        let target = Date().addingTimeInterval(minutes * 60)
+        let f = DateFormatter()
+        f.dateFormat = Calendar.current.isDateInToday(target) ? "HH:mm" : "EEE d MMM HH:mm"
+        return "~\(dur)  (→ \(f.string(from: target)))"
     }
 }
 

@@ -47,6 +47,26 @@ final class StateParserTests: XCTestCase {
         XCTAssertLessThan(s.uptime!, 160)
     }
 
+    func testQueueEtaFromAdvanceRate() {
+        // 1587 → 1583 over ~63 s ≈ -3.8/min → ETA ≈ 1583 / 3.8 ≈ 416 min.
+        let s = StateParser.parse(text: queuedLog, now: date("2026-07-05 17:46:20.000"))
+        let eta = s.etaMinutesToFront
+        XCTAssertNotNil(eta)
+        XCTAssertGreaterThan(eta!, 300)
+        XCTAssertLessThan(eta!, 550)
+    }
+
+    func testNoEtaWhenNotAdvancing() {
+        // Two identical positions → trend ~0 → no ETA.
+        let flat = """
+        [2026-07-05 17:45:00.000] [info]  x - response: {'status': 'queued', 'position': 1500}
+        [2026-07-05 17:46:00.000] [info]  x - response: {'status': 'queued', 'position': 1500}
+        """
+        let s = StateParser.parse(text: flat, now: date("2026-07-05 17:46:10.000"))
+        XCTAssertEqual(s.phase, .queued)
+        XCTAssertNil(s.etaMinutesToFront)
+    }
+
     func testStaleLogFallsBackToOff() {
         // Same log read 24 min later: last line is older than the 120 s threshold.
         let s = StateParser.parse(text: queuedLog, now: date("2026-07-05 18:10:00.000"))

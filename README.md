@@ -81,20 +81,29 @@ Notes / caveats:
 
 ## Usage
 
-The app lives only in the menu bar (no Dock icon). The title shows the current
-queue position and a trend arrow:
+The app lives only in the menu bar (no Dock icon). It shows a colored status dot
+plus compact text:
 
-| Title | Meaning |
-|-------|---------|
-| `⛏ 1564 ▼` | queued at 1564, **advancing** toward the front (good) |
-| `⛏ 1564 ▲` | queued, **falling back** (usually caused by restarting the app) |
-| `⛏ ▶︎` | assigned / working |
-| `⛏ …` | starting / resetting / running speedtest |
-| `⛏ off` | official app not running, or log stale (>2 min) |
-| `⛏ ?` | running but state not yet recognized |
+| Menu bar | Meaning |
+|----------|---------|
+| 🟢 `working` | assigned / training |
+| 🟡 `1564 ▼` | queued at 1564, **advancing** toward the front (good) |
+| 🟡 `1564 ▲` | queued, **falling back** (usually from restarting the app) |
+| 🟡 `…` | starting / resetting / running speedtest |
+| 🔴 `off` | official app not running, or log stale (>2 min) |
+| ⚪️ `?` | running but state not yet recognized |
 
-Click the icon for the detail menu (state, position + rate, uptime, work,
-speedtest, backend error counts, last-update time).
+Trend arrow: `▼` advancing, `▲` falling back, `=` stable.
+
+Click the dot for the detail menu:
+
+- **status** — state, queue position + rate, **ETA to the front** (rough estimate
+  + target time, or "not advancing"), uptime, work, speedtest, backend errors,
+  last update.
+- **official app** — *Launch* / *Quit* / *Restart* the official signed app, and
+  *Reap orphaned worker* when it leaves a `main_pool` behind on quit.
+- **Open log**, **Launch at Login**, **Preferences…**, **Rebuild & restart**
+  (rebuilds from source next to the app, then relaunches — dev convenience).
 
 **Launch at login** — toggle it directly from the menu (`Launch at Login`)
 or from **Preferences…**. Uses `SMAppService`; the first time, macOS may list it
