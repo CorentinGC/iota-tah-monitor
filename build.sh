@@ -29,10 +29,10 @@ PLIST
 
 echo "Compiling…"
 swiftc -O \
-  Sources/LogReader.swift \
-  Sources/StateParser.swift \
-  Sources/Preferences.swift \
-  Sources/main.swift \
+  Sources/IOTAMonitorCore/LogReader.swift \
+  Sources/IOTAMonitorCore/StateParser.swift \
+  App/Preferences.swift \
+  App/main.swift \
   -o "$BIN"
 
 codesign --force --sign - "$APP" 2>/dev/null || true

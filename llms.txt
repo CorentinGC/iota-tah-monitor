@@ -1,0 +1,23 @@
+# IOTA T@H Monitor
+
+> App menu bar macOS (Swift/AppKit) qui lit le log CLI d'IOTA "Train at Home" et
+> affiche la vraie position de queue / state / work que l'UI officielle n'affiche
+> pas. Lecture seule, sans réseau, sans dépendance runtime.
+
+## Documentation
+- [Architecture](docs/architecture.md) : modules, flux, frontière core/app, machine à états
+- [Setup](docs/setup.md) : prérequis, build, tests, lancement au démarrage
+- [Conventions](docs/conventions.md) : style, tests, format de log (contrat), git
+- [Décisions (ADR)](docs/decisions/) : [0001 log-only, pas de ws](docs/decisions/0001-log-only-no-ws.md)
+- [README](README.md) : usage + maintenabilité (détaillé)
+- [Spec de conception](docs/superpowers/specs/2026-07-05-iota-tah-monitor-design.md)
+
+## Référence agent
+- [CLAUDE.md](CLAUDE.md) : règles de travail
+- [AGENTS.md](AGENTS.md) : règles agent (invariants, format de log = contrat)
+- [MEMORY.md](MEMORY.md) : mémoire de travail (état courant)
+
+## Modules
+- [LogReader](Sources/IOTAMonitorCore/LogReader.swift) : résolution + tail du log du jour
+- [StateParser](Sources/IOTAMonitorCore/StateParser.swift) : log → MinerState (testé)
+- [App](App/main.swift) : NSStatusItem + Préférences (SMAppService)
