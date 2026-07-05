@@ -24,18 +24,18 @@ final class PreferencesWindowController: NSObject {
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 150),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false)
-        w.title = "IOTA Monitor — Préférences"
+        w.title = "IOTA Monitor — Preferences"
         w.isReleasedWhenClosed = false
 
         let content = NSView(frame: w.contentView!.bounds)
         content.autoresizingMask = [.width, .height]
 
-        let title = NSTextField(labelWithString: "Démarrage")
+        let title = NSTextField(labelWithString: "Startup")
         title.font = .boldSystemFont(ofSize: 13)
         title.frame = NSRect(x: 20, y: 108, width: 320, height: 20)
         content.addSubview(title)
 
-        loginSwitch = NSButton(checkboxWithTitle: "Lancer au démarrage de session",
+        loginSwitch = NSButton(checkboxWithTitle: "Launch at login",
                                target: self, action: #selector(toggleLogin))
         loginSwitch.frame = NSRect(x: 20, y: 78, width: 320, height: 22)
         content.addSubview(loginSwitch)
@@ -56,11 +56,11 @@ final class PreferencesWindowController: NSObject {
         loginSwitch.state = (status == .enabled) ? .on : .off
         switch status {
         case .enabled:
-            statusLabel.stringValue = "Actif : l'app se lancera à l'ouverture de session."
+            statusLabel.stringValue = "Enabled: the app will launch at login."
         case .requiresApproval:
-            statusLabel.stringValue = "En attente d'approbation dans Réglages Système › Général › Ouverture."
+            statusLabel.stringValue = "Awaiting approval in System Settings › General › Login Items."
         case .notRegistered, .notFound:
-            statusLabel.stringValue = "Inactif."
+            statusLabel.stringValue = "Disabled."
         @unknown default:
             statusLabel.stringValue = ""
         }
@@ -77,7 +77,7 @@ final class PreferencesWindowController: NSObject {
         } catch {
             // Revert the checkbox and explain — never leave UI out of sync.
             let alert = NSAlert()
-            alert.messageText = "Impossible de modifier le démarrage au login"
+            alert.messageText = "Could not change launch-at-login setting"
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .warning
             alert.runModal()

@@ -1,35 +1,35 @@
 # Setup
 
-## Prérequis
-- macOS 13 (Ventura) ou plus
-- Xcode command-line tools avec `swiftc` + `swift` (build & tests). Aucune
-  dépendance runtime.
+## Prerequisites
+- macOS 13 (Ventura) or later
+- Xcode command-line tools with `swiftc` + `swift` (build & tests). No
+  runtime dependencies.
 
-## Cloner & builder
+## Clone & build
 ```bash
 git clone git@github.com:CorentinGC/iota-tah-monitor.git
 cd iota-tah-monitor
-swift test        # lance les tests du core
-./build.sh        # produit "IOTA Monitor.app"
+swift test        # runs the core tests
+./build.sh        # produces "IOTA Monitor.app"
 open "IOTA Monitor.app"
 ```
 
-Pour garder l'app : glisser `IOTA Monitor.app` dans `/Applications`.
+To keep the app: drag `IOTA Monitor.app` into `/Applications`.
 
-## Variables d'environnement
-Aucune. Le seul chemin externe est le répertoire de log, codé dans
-`LogReader.logDir` :
+## Environment variables
+None. The only external path is the log directory, hard-coded in
+`LogReader.logDir`:
 `~/Library/Logs/IOTA Train at Home/`.
 
-## Lancement au démarrage
-Menu de l'app → *Lancer au démarrage*, ou fenêtre *Préférences…*. Utilise
-`SMAppService` ; macOS peut demander l'approbation dans *Réglages Système →
-Général → Ouverture*.
+## Launch at login
+App menu → *Launch at Login*, or the *Preferences…* window. Uses
+`SMAppService`; macOS may request approval in *System Settings →
+General → Login Items*.
 
-## Commandes
-| But | Commande |
+## Commands
+| Purpose | Command |
 |-----|----------|
 | Tests | `swift test` |
 | Build | `./build.sh` |
-| Lancer | `open "IOTA Monitor.app"` |
-| Tuer l'instance | `pkill -f "IOTA Monitor"` |
+| Launch | `open "IOTA Monitor.app"` |
+| Kill the instance | `pkill -f "IOTA Monitor"` |

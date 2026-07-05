@@ -1,9 +1,9 @@
 # Architecture
 
-## Vue d'ensemble
+## Overview
 
-Un seul processus Swift/AppKit, **lecture seule**, sans réseau. Un timer (5 s) lit
-la fin du log CLI de l'app officielle, le parse, et repeint la barre de menu.
+A single Swift/AppKit process, **read-only**, with no networking. A timer (5 s) reads
+the tail of the official app's CLI log, parses it, and repaints the menu bar.
 
 ```
 ~/Library/Logs/IOTA Train at Home/<YYYY-MM-DD>-cli.log
@@ -14,37 +14,37 @@ la fin du log CLI de l'app officielle, le parse, et repeint la barre de menu.
 
 ## Modules
 
-| Fichier | Rôle | Dépendances |
+| File | Role | Dependencies |
 |---------|------|-------------|
-| `Sources/IOTAMonitorCore/LogReader.swift` | Résout le log du jour, lit le tail (64 KB), gère fichier absent/vide + rotation de date à minuit. | Foundation |
-| `Sources/IOTAMonitorCore/StateParser.swift` | Regex du tail → `MinerState`. Défensif, ne throw jamais. | Foundation |
-| `App/main.swift` | `NSStatusItem`, boucle timer, rendu titre + menu. | AppKit, ServiceManagement |
-| `App/Preferences.swift` | Toggle *launch at login* (`SMAppService`) + fenêtre Préférences. | AppKit, ServiceManagement |
+| `Sources/IOTAMonitorCore/LogReader.swift` | Resolves the current day's log, reads the tail (64 KB), handles a missing/empty file plus date rotation at midnight. | Foundation |
+| `Sources/IOTAMonitorCore/StateParser.swift` | Regex over the tail → `MinerState`. Defensive, never throws. | Foundation |
+| `App/main.swift` | `NSStatusItem`, timer loop, title + menu rendering. | AppKit, ServiceManagement |
+| `App/Preferences.swift` | *Launch at Login* toggle (`SMAppService`) + Preferences window. | AppKit, ServiceManagement |
 
-## Frontière core / app
+## Core / app boundary
 
-Le **core** (`Sources/IOTAMonitorCore/`) ne dépend que de Foundation → testable via
-SwiftPM (`swift test`, `@testable import`). L'**app** (`App/`) porte tout AppKit.
-`build.sh` compile les deux répertoires ensemble en un seul module via `swiftc`
-(donc `main.swift` n'importe pas `IOTAMonitorCore` — même module au build app).
-SwiftPM ne connaît que le core + les tests.
+The **core** (`Sources/IOTAMonitorCore/`) depends only on Foundation → testable via
+SwiftPM (`swift test`, `@testable import`). The **app** (`App/`) holds all of AppKit.
+`build.sh` compiles both directories together into a single module via `swiftc`
+(so `main.swift` does not import `IOTAMonitorCore` — same module in the app build).
+SwiftPM only knows about the core + the tests.
 
-## Flux de données
+## Data flow
 
 1. `LogReader.readTail()` → `.ok(text, mtime)` / `.empty` / `.missing`.
 2. `StateParser.parse(text:now:)` → `MinerState { position, trendPerMin, phase,
    workLine, speedtestOk, queueStateErrors, notFoundErrors, uptime, lastLogTime,
    lastRawLine }`.
-3. `MenuBarApp` mappe `phase` → titre (`⛏ <pos> ▼/▲`, `off`, `…`, `▶︎`, `?`) et
-   construit le menu déroulant.
+3. `MenuBarApp` maps `phase` → title (`⛏ <pos> ▼/▲`, `off`, `…`, `▶︎`, `?`) and
+   builds the drop-down menu.
 
-## Décisions structurantes
-- **Log-only, pas de ws** : le token du ws `127.0.0.1:8010` tourne à chaque
-  restart et l'hôte Electron occupe la connexion. Voir `decisions/0001`.
-- **Machine à états** dérivée du log : `off → starting → resetting → speedtest →
-  queued → working`. `off` aussi si dernière ligne > 120 s (log figé).
+## Structural decisions
+- **Log-only, no ws**: the ws token for `127.0.0.1:8010` rotates on every
+  restart and the Electron host occupies the connection. See `decisions/0001`.
+- **State machine** derived from the log: `off → starting → resetting → speedtest →
+  queued → working`. Also `off` if the last line is > 120 s old (stalled log).
 
-## Point de fragilité
-Le **format des lignes de log** est le contrat implicite. Un changement de wording
-côté Macrocosmos casse le parsing silencieusement — d'où l'agent
-`log-format-watcher` et la couverture de tests sur `StateParser`.
+## Point of fragility
+The **log line format** is the implicit contract. A wording change on the
+Macrocosmos side breaks parsing silently — hence the `log-format-watcher` agent
+and the test coverage on `StateParser`.

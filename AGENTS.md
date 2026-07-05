@@ -1,37 +1,37 @@
 # AGENTS.md — IOTA T@H Monitor
 
-Règles pour les agents IA. Inclus par `CLAUDE.md` (`@AGENTS.md`).
+Rules for AI agents. Included by `CLAUDE.md` (`@AGENTS.md`).
 
-## Avant de coder
-- Lire `MEMORY.md` + `llms.txt`. Mettre à jour `MEMORY.md` après chaque edit.
-- La doc officielle fait foi sur tes données d'entraînement. Pour AppKit /
-  ServiceManagement / SwiftPM, vérifier l'API via la doc Apple ou le MCP
-  `context7` plutôt que de deviner (`SMAppService` est macOS 13+, API récente).
+## Before coding
+- Read `MEMORY.md` + `llms.txt`. Update `MEMORY.md` after each edit.
+- Official docs take precedence over your training data. For AppKit /
+  ServiceManagement / SwiftPM, verify the API via Apple's docs or the `context7`
+  MCP rather than guessing (`SMAppService` is macOS 13+, a recent API).
 
-## Le format de log est le contrat
-- Le projet ne fait que **lire et parser** le log de l'app officielle. Tout le
-  comportement dépend des strings que le miner écrit dans
+## The log format is the contract
+- The project only **reads and parses** the official app's log. All behavior
+  depends on the strings the miner writes to
   `~/Library/Logs/IOTA Train at Home/<date>-cli.log`.
-- Avant de modifier `StateParser`, regarder un log réel courant pour confirmer le
-  format. Après modif : `swift test` doit rester vert + ajouter un cas de test
-  pour tout nouveau motif.
-- Le parsing du **work effectif** est *best-effort* : aucune ligne de training
-  réelle observée à ce jour. Quand une vraie apparaît (front de queue atteint),
-  capturer la ligne exacte et enrichir `workDescription`.
+- Before modifying `StateParser`, look at a current real log to confirm the
+  format. After changes: `swift test` must stay green + add a test case for any
+  new pattern.
+- Parsing the **actual work** is *best-effort*: no real training line observed to
+  date. When a real one appears (queue front reached), capture the exact line and
+  enrich `workDescription`.
 
-## Invariants non négociables
-- **Lecture seule** : jamais d'écriture dans les logs, jamais de modif de l'app
-  officielle, jamais de connexion au ws `127.0.0.1:8010`.
-- **`StateParser` ne throw jamais** et ne crash pas sur ligne inconnue.
-- **Core sans AppKit** : `Sources/IOTAMonitorCore/` reste importable/testable sans
-  UI. L'UI vit dans `App/`.
+## Non-negotiable invariants
+- **Read only**: never write to the logs, never modify the official app, never
+  connect to the `127.0.0.1:8010` ws.
+- **`StateParser` never throws** and does not crash on an unknown line.
+- **AppKit-free core**: `Sources/IOTAMonitorCore/` stays importable/testable
+  without UI. The UI lives in `App/`.
 
-## Outillage
-- Pas de dépendance tierce, et c'est un objectif : préférer la stdlib/Foundation.
-  N'ajouter une dépendance qu'avec raison documentée (ADR dans `docs/decisions/`).
+## Tooling
+- No third-party dependency, and that's a goal: prefer the stdlib/Foundation.
+  Add a dependency only with a documented reason (ADR in `docs/decisions/`).
 - Build app = `./build.sh` (swiftc → `.app`). Tests = `swift test`.
 
 ## Workflow
-- Paralléliser le travail indépendant (cf. `CLAUDE.md`).
-- Jamais de commit/push sans validation explicite. Respecter Conventional Commits.
-- Respecter lint implicite : pas de warning `swiftc`, code idiomatique.
+- Parallelize independent work (see `CLAUDE.md`).
+- Never commit/push without explicit approval. Follow Conventional Commits.
+- Respect the implicit lint: no `swiftc` warnings, idiomatic code.

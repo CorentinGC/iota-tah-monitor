@@ -77,11 +77,11 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         m.addItem(.separator())
         let open = NSMenuItem(title: "Open log", action: #selector(openLog), keyEquivalent: "l")
         open.target = self; m.addItem(open)
-        let login = NSMenuItem(title: "Lancer au démarrage", action: #selector(toggleLoginQuick), keyEquivalent: "")
+        let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginQuick), keyEquivalent: "")
         login.target = self
         login.state = PreferencesWindowController.launchAtLoginEnabled ? .on : .off
         m.addItem(login)
-        let pref = NSMenuItem(title: "Préférences…", action: #selector(openPrefs), keyEquivalent: ",")
+        let pref = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         pref.target = self; m.addItem(pref)
         let quit = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self; m.addItem(quit)
@@ -101,7 +101,7 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
             if service.status == .enabled { try service.unregister() }
             else { try service.register() }
         } catch {
-            let a = NSAlert(); a.messageText = "Échec du réglage démarrage au login"
+            let a = NSAlert(); a.messageText = "Failed to change launch-at-login setting"
             a.informativeText = error.localizedDescription; a.alertStyle = .warning; a.runModal()
         }
     }

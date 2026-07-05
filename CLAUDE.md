@@ -1,67 +1,67 @@
-# IOTA T@H Monitor — Guide agent
+# IOTA T@H Monitor — Agent Guide
 
 @AGENTS.md
 
-> Lis ce fichier, `AGENTS.md`, `MEMORY.md` et `llms.txt` **avant** toute tâche de code.
+> Read this file, `AGENTS.md`, `MEMORY.md` and `llms.txt` **before** any code task.
 
-## Ce que c'est
-App **menu bar macOS** (Swift/AppKit) qui lit le log CLI de l'app officielle IOTA
-"Train at Home" et affiche la vraie position de queue / state / work — que l'UI
-officielle n'affiche pas (son handler `register.queue_state` renvoie 503). Lecture
-seule, aucune connexion réseau, aucune dépendance runtime.
+## What it is
+A **macOS menu bar app** (Swift/AppKit) that reads the CLI log of the official IOTA
+"Train at Home" app and shows the real queue position / state / work — which the
+official UI does not display (its `register.queue_state` handler returns 503).
+Read only, no network connection, no runtime dependency.
 
 ## Stack
 Swift 6 · AppKit (`NSStatusItem`) · ServiceManagement (`SMAppService`, login item) ·
-macOS 13+ · SwiftPM (tests du core uniquement) · pas de dépendance tierce.
+macOS 13+ · SwiftPM (core tests only) · no third-party dependency.
 
-## Commandes
-| But | Commande |
-|-----|----------|
+## Commands
+| Goal | Command |
+|------|---------|
 | Tests (core) | `swift test` |
 | Build app | `./build.sh` → `IOTA Monitor.app` |
-| Lancer | `open "IOTA Monitor.app"` |
-| Test parser sur log réel | voir `README.md` § Maintainability |
+| Run | `open "IOTA Monitor.app"` |
+| Test parser against real log | see `README.md` § Maintainability |
 
 ## Layout
-- `Sources/IOTAMonitorCore/` — logique pure **testée** (`LogReader`, `StateParser`), aucune dépendance AppKit. Cible SwiftPM.
-- `App/` — app AppKit (`main.swift`, `Preferences.swift`). **Hors SwiftPM**, buildée par `build.sh` via `swiftc` (compile core + app en un seul module).
-- `Tests/IOTAMonitorCoreTests/` — tests du parser (`@testable import IOTAMonitorCore`).
+- `Sources/IOTAMonitorCore/` — pure **tested** logic (`LogReader`, `StateParser`), no AppKit dependency. SwiftPM target.
+- `App/` — AppKit app (`main.swift`, `Preferences.swift`). **Outside SwiftPM**, built by `build.sh` via `swiftc` (compiles core + app into a single module).
+- `Tests/IOTAMonitorCoreTests/` — parser tests (`@testable import IOTAMonitorCore`).
 
-## Mémoire & documentation (obligatoire)
-- **Avant de coder** : lire `MEMORY.md` (état courant) + `llms.txt` (index doc).
-- **Après chaque edit** : mettre à jour `MEMORY.md` (état, prochaines étapes, gotchas).
-- **À chaque changement d'archi/pattern/format de log** : mettre à jour `docs/` + `llms.txt`.
-- `MEMORY.md` = mémoire de travail courte. `docs/` = doc détaillée stable. Ne pas dupliquer.
+## Memory & documentation (mandatory)
+- **Before coding**: read `MEMORY.md` (current state) + `llms.txt` (doc index).
+- **After each edit**: update `MEMORY.md` (state, next steps, gotchas).
+- **On any change to architecture/pattern/log format**: update `docs/` + `llms.txt`.
+- `MEMORY.md` = short working memory. `docs/` = detailed stable docs. Don't duplicate.
 
-## Qualité de code
-- **DRY / SRP** : 1 fichier = 1 responsabilité. Le core reste **sans AppKit** (testable).
-- **Taille** : warning à 400 LOC, découpage à 500.
-- **Naming explicite** ; booléens `is/has/can/should`.
-- **Early returns**, max 3 niveaux d'indentation.
-- **Pas de dead code**, pas de `TODO` sans suite.
-- **Parsing défensif** : `StateParser` ne doit **jamais** throw ni crasher sur une ligne inconnue — fallback sur la dernière ligne brute.
+## Code quality
+- **DRY / SRP**: 1 file = 1 responsibility. The core stays **AppKit-free** (testable).
+- **Size**: warning at 400 LOC, split at 500.
+- **Explicit naming**; booleans `is/has/can/should`.
+- **Early returns**, max 3 levels of indentation.
+- **No dead code**, no `TODO` without follow-up.
+- **Defensive parsing**: `StateParser` must **never** throw or crash on an unknown line — fall back to the last raw line.
 
-## Conventions du projet
-- **Tests** : le core (`LogReader`/`StateParser`) est couvert par `swift test` — toute modif du parsing doit garder les tests verts et ajouter un cas pour le nouveau format. L'app AppKit n'a pas de tests auto (vérif manuelle : `./build.sh` + `open`).
-- **Format de log = contrat** : tout dépend des strings écrites par le miner. Voir `docs/architecture.md` et `README.md` § Maintainability pour où toucher.
-- **Commits** : Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`…).
-- **Langue** : doc/commentaires en **FR** possible, identifiants + commentaires de code existants en **EN** (garder la cohérence du fichier édité).
-- **Pas de réseau** : ne jamais ajouter de connexion au ws `127.0.0.1:8010` (token tournant + conflit avec l'hôte Electron). Lecture de log uniquement.
+## Project conventions
+- **Tests**: the core (`LogReader`/`StateParser`) is covered by `swift test` — any parsing change must keep the tests green and add a case for the new format. The AppKit app has no automated tests (manual check: `./build.sh` + `open`).
+- **Log format = contract**: everything depends on the strings written by the miner. See `docs/architecture.md` and `README.md` § Maintainability for where to touch.
+- **Commits**: Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`…).
+- **Language**: docs and comments in **English** (the repo is international). Keep identifiers and existing code comments in English too.
+- **No network**: never add a connection to the `127.0.0.1:8010` ws (rotating token + conflict with the Electron host). Log reading only.
 
-## Parallélisation des subagents (par défaut)
-Pour tout travail décomposable, lancer plusieurs subagents en parallèle (une réponse, plusieurs appels) :
-- Exploration : plusieurs `Explore` ciblés.
-- Édition multi-fichiers : un agent par fichier indépendant.
-- Revue : agents par dimension en parallèle.
-- Optimiser le `model` par agent : `haiku` recherche/doc/mécanique, `sonnet` code/review, `opus` archi/debug difficile.
+## Subagent parallelization (default)
+For any decomposable work, launch several subagents in parallel (one reply, multiple calls):
+- Exploration: multiple targeted `Explore`.
+- Multi-file editing: one agent per independent file.
+- Review: agents by dimension in parallel.
+- Optimize the `model` per agent: `haiku` for search/docs/mechanical, `sonnet` for code/review, `opus` for architecture/hard debugging.
 
-## Agents projet
-- `log-format-watcher` (haiku) — vérifie que les matchers de `StateParser` collent au log réel courant. **Point de fragilité #1.**
-- `swift-reviewer` (sonnet) — review Swift/AppKit (retain cycles, main-thread UI, idiomes `NSStatusItem`/`SMAppService`).
-- `doc-maintainer` (haiku) — sync `docs/` + `llms.txt` + `MEMORY.md` après changement d'archi/pattern.
+## Project agents
+- `log-format-watcher` (haiku) — checks that `StateParser`'s matchers still fit the current real log. **Fragility point #1.**
+- `swift-reviewer` (sonnet) — Swift/AppKit review (retain cycles, main-thread UI, `NSStatusItem`/`SMAppService` idioms).
+- `doc-maintainer` (haiku) — syncs `docs/` + `llms.txt` + `MEMORY.md` after an architecture/pattern change.
 
 ## MCP
-Aucun `.mcp.json` : app native sans surface web (le MCP `chrome-devtools` ne s'applique pas). `context7` (global) reste utile pour la doc AppKit/SwiftPM.
+No `.mcp.json`: native app with no web surface (the `chrome-devtools` MCP does not apply). `context7` (global) remains useful for AppKit/SwiftPM docs.
 
-## Pointeurs
-`AGENTS.md` — règles agent · `llms.txt` — index doc · `docs/` — doc détaillée · `MEMORY.md` — mémoire de travail · `README.md` — usage + maintenabilité.
+## Pointers
+`AGENTS.md` — agent rules · `llms.txt` — doc index · `docs/` — detailed docs · `MEMORY.md` — working memory · `README.md` — usage + maintainability.

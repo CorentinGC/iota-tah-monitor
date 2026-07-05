@@ -71,8 +71,8 @@ queue position and a trend arrow:
 Click the icon for the detail menu (state, position + rate, uptime, work,
 speedtest, backend error counts, last-update time).
 
-**Launch at login** — toggle it directly from the menu (`Lancer au démarrage`)
-or from **Préférences…**. Uses `SMAppService`; the first time, macOS may list it
+**Launch at login** — toggle it directly from the menu (`Launch at Login`)
+or from **Preferences…**. Uses `SMAppService`; the first time, macOS may list it
 under *System Settings › General › Login Items* pending approval.
 
 ### Operational note
