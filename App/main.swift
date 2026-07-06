@@ -128,11 +128,9 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         login.target = self
         login.state = PreferencesWindowController.launchAtLoginEnabled ? .on : .off
         m.addItem(login)
-        let lidOn = LidAwake.isEnabled
-        let lid = NSMenuItem(title: "☕️ Keep awake, lid closed — \(lidOn ? "ON" : "OFF")",
-                             action: #selector(toggleLidAwake), keyEquivalent: "")
+        let lid = NSMenuItem(title: "Keep awake, lid closed", action: #selector(toggleLidAwake), keyEquivalent: "")
         lid.target = self
-        lid.state = lidOn ? .on : .off
+        lid.image = dot(LidAwake.isEnabled ? .systemGreen : .systemRed)   // green = ON, red = OFF
         m.addItem(lid)
         let pref = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         pref.target = self; m.addItem(pref)
