@@ -109,12 +109,14 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
             let it = NSMenuItem(title: title, action: sel, keyEquivalent: key)
             it.target = self; m.addItem(it)
         }
-        if OfficialApp.isRunning {
-            row("Official app:  running")
+        let appUp = OfficialApp.isRunning
+        let appStatus = NSMenuItem(title: "Official app: \(appUp ? "running" : "stopped")", action: nil, keyEquivalent: "")
+        appStatus.image = dot(appUp ? .systemGreen : .systemRed)
+        m.addItem(appStatus)
+        if appUp {
             action("Restart official app", #selector(restartOfficial))
             action("Quit official app", #selector(quitOfficial))
         } else {
-            row("Official app:  stopped")
             action("Launch official app", #selector(launchOfficial))
             if OfficialApp.orphanWorkerAlive() {
                 action("⚠ Reap orphaned worker", #selector(reapOfficial))
@@ -126,7 +128,7 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         open.target = self; m.addItem(open)
         let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginQuick), keyEquivalent: "")
         login.target = self
-        login.state = PreferencesWindowController.launchAtLoginEnabled ? .on : .off
+        login.image = dot(PreferencesWindowController.launchAtLoginEnabled ? .systemGreen : .systemRed)
         m.addItem(login)
         let lid = NSMenuItem(title: "Keep awake, lid closed", action: #selector(toggleLidAwake), keyEquivalent: "")
         lid.target = self
