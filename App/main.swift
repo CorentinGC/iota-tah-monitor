@@ -128,6 +128,10 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         login.target = self
         login.state = PreferencesWindowController.launchAtLoginEnabled ? .on : .off
         m.addItem(login)
+        let lid = NSMenuItem(title: "☕️ Keep awake, lid closed", action: #selector(toggleLidAwake), keyEquivalent: "")
+        lid.target = self
+        lid.state = LidAwake.isEnabled ? .on : .off
+        m.addItem(lid)
         let pref = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         pref.target = self; m.addItem(pref)
         if repoDir() != nil {
@@ -154,6 +158,33 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPrefs() { prefs.show() }
+
+    /// Toggle lid-closed-awake. Warn about heat/battery before enabling.
+    @objc private func toggleLidAwake() {
+        if LidAwake.isEnabled {
+            LidAwake.setEnabled(false); refreshSoon(); return
+        }
+        let a = NSAlert()
+        a.messageText = "Keep the Mac awake with the lid closed?"
+        a.informativeText = """
+        This disables lid-close sleep on every power source (pmset disablesleep), so \
+        the Mac keeps mining when you shut it — even on battery. It stays on until you \
+        turn it back off here.
+
+        ⚠️ While mining, a closed lid with no airflow (e.g. in a bag) can overheat the \
+        Mac and drain the battery fast. Only use it somewhere open and ventilated, \
+        ideally on power.
+        """
+        a.alertStyle = .warning
+        a.addButton(withTitle: "Enable")
+        a.addButton(withTitle: "Cancel")
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+        if !LidAwake.setEnabled(true) {
+            let e = NSAlert(); e.messageText = "Could not enable (auth cancelled or failed)"
+            e.alertStyle = .warning; e.runModal()
+        }
+        refreshSoon()
+    }
 
     /// Quick toggle straight from the menu checkbox (mirrors the panel switch).
     @objc private func toggleLoginQuick() {

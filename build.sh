@@ -41,6 +41,7 @@ swiftc -O \
   Sources/IOTAMonitorCore/StateParser.swift \
   App/Preferences.swift \
   App/OfficialApp.swift \
+  App/LidAwake.swift \
   App/main.swift \
   -o "$BIN"
 

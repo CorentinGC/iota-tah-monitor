@@ -10,6 +10,9 @@
 - Detail menu shows a **queue ETA** (`MinerState.etaMinutesToFront`: position ÷
   advance rate; nil when not advancing) + a **Rebuild & restart** item (runs
   `build.sh` next to the bundle, then relaunches).
+- Lid-closed-awake toggle (`App/LidAwake.swift`): `pmset -a disablesleep` via
+  osascript admin auth, warns about heat/battery on enable. Persistent setting —
+  stays until turned off. `caffeinate` (lid open) is enough for normal use.
 - Official-app lifecycle control (`App/OfficialApp.swift`): Launch / Quit /
   Restart the official signed app + reap the `main_pool` workers it orphans on
   quit (a bug in its own will-quit cleanup). Launch uses `open -gj` (background,

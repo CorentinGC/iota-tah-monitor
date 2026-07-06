@@ -102,6 +102,10 @@ Click the dot for the detail menu:
   last update.
 - **official app** — *Launch* / *Quit* / *Restart* the official signed app, and
   *Reap orphaned worker* when it leaves a `main_pool` behind on quit.
+- **☕️ Keep awake, lid closed** — toggles `pmset disablesleep` so the Mac keeps
+  mining with the lid shut (even on battery), which `caffeinate` can't do.
+  Prompts for admin auth; warns about heat/battery first; stays on until you turn
+  it off. Only for a ventilated, ideally-powered spot — not a closed bag.
 - **Open log**, **Launch at Login**, **Preferences…**, **Rebuild & restart**
   (rebuilds from source next to the app, then relaunches — dev convenience).
 
