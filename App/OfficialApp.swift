@@ -18,6 +18,13 @@ enum OfficialApp {
         NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == bundleId }
     }
 
+    /// Short version string from the installed app bundle, if found.
+    static var version: String? {
+        let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)
+            ?? URL(fileURLWithPath: "/Applications/\(displayName).app")
+        return Bundle(url: url)?.infoDictionary?["CFBundleShortVersionString"] as? String
+    }
+
     /// True when a `main_pool` worker is alive while the app is not — the orphan bug.
     static func orphanWorkerAlive() -> Bool {
         run("/usr/bin/pgrep", ["-f", "main_pool"]).status == 0

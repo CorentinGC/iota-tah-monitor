@@ -85,6 +85,21 @@ final class StateParserTests: XCTestCase {
         XCTAssertLessThan(s.trendPerMin!, -0.5)   // recent descent, not the flat whole-tail slope
     }
 
+    func testUnrecognizedStructuralLinesCaptureOnlyNewShapes() {
+        let log = """
+        [t] x | DEBUG | subnet.common_api_client:req:33 - Making orchestrator request | method: GET
+        [t] x | INFO  | miner.pool.miner:run:1 - response: {'status': 'queued', 'position': 1500}
+        [t] x | INFO  | miner.trainer:run:88 - fwd_pass shard=3 microstep=42 grad_norm=1.7
+        [t] x | INFO  | miner.trainer:run:88 - fwd_pass shard=3 microstep=43 grad_norm=1.6
+        plain non-structural line without the separator
+        """
+        let items = StateParser.unrecognizedStructuralLines(in: log)
+        // orchestrator + queued recognized; the two fwd_pass lines share a template.
+        XCTAssertEqual(items.count, 1)
+        XCTAssertTrue(items[0].sample.contains("fwd_pass"))
+        XCTAssertTrue(items[0].template.contains("#"))   // digits templated
+    }
+
     func testStaleLogFallsBackToOff() {
         // Same log read 24 min later: last line is older than the 120 s threshold.
         let s = StateParser.parse(text: queuedLog, now: date("2026-07-05 18:10:00.000"))

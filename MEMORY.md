@@ -4,6 +4,18 @@
 > Concise (< 150 lines). Detailed docs → `llms.txt` / `docs/`.
 
 ## Current state
+- **Watchdog** (`App/WatchdogSettings.swift` toggle + core `Watchdog.decide`,
+  tested): opt-in auto-restart. crash = app down + orphans → reap+launch; zombie =
+  app up + log stale >5min → restart. Only acts if recently-up (won't launch a
+  deliberately-off app); backoff 3min; flap guard auto-disables after >3/15min.
+- **Capture unknown lines** (`App/UnknownCapture.swift` + core
+  `StateParser.unrecognizedStructuralLines`, tested): opt-in, writes new
+  unrecognized log-line shapes to `~/Library/Logs/IOTA Monitor/unknown-lines.log`
+  — to grab real training-line formats once assigned.
+- **Version watch** (`App/VersionWatch.swift` + `OfficialApp.version`): flags in
+  the menu when the official app updates (parser may need re-check); Dismiss acks.
+- runBuild drains the pipe before waitUntilExit (no deadlock on large output).
+
 - Working v1: menu bar shows a colored status dot (🔴 off · 🟡 queued · 🟢 working,
   non-template `NSImage`) + compact text, plus position/state/work/speedtest/backend,
   *launch at login* toggle (`SMAppService`) + Preferences window.

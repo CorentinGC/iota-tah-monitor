@@ -17,9 +17,12 @@ the tail of the official app's CLI log, parses it, and repaints the menu bar.
 | File | Role | Dependencies |
 |---------|------|-------------|
 | `Sources/IOTAMonitorCore/LogReader.swift` | Resolves the current day's log, reads the tail (64 KB), handles a missing/empty file plus date rotation at midnight. | Foundation |
-| `Sources/IOTAMonitorCore/StateParser.swift` | Regex over the tail → `MinerState`. Defensive, never throws. | Foundation |
-| `App/main.swift` | `NSStatusItem`, timer loop, title + menu rendering. | AppKit, ServiceManagement |
+| `Sources/IOTAMonitorCore/StateParser.swift` | Regex over the tail → `MinerState`; also `unrecognizedStructuralLines` (unknown-line capture). Defensive, never throws. | Foundation |
+| `Sources/IOTAMonitorCore/Watchdog.swift` | Pure `Watchdog.decide` (crash/zombie → relaunch/restart). Testable, no side effects. | Foundation |
+| `App/main.swift` | `NSStatusItem`, timer loop, title + menu rendering, watchdog execution. | AppKit, ServiceManagement |
 | `App/Preferences.swift` | *Launch at Login* toggle (`SMAppService`) + Preferences window. | AppKit, ServiceManagement |
+| `App/OfficialApp.swift` | Launch/Quit/Restart the official app, reap orphans, read its version. | AppKit |
+| `App/LidAwake.swift` · `UnknownCapture.swift` · `VersionWatch.swift` · `WatchdogSettings.swift` | Menu-driven helpers: lid-close sleep, debug capture, version-change flag, watchdog flag. | Foundation |
 
 ## Core / app boundary
 

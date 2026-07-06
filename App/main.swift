@@ -9,7 +9,14 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     private let refresh: TimeInterval = 5
     private let prefs = PreferencesWindowController()
 
+    // Watchdog runtime state (decision logic is in core `Watchdog`).
+    private var lastSeenRunningAt: Date?
+    private var lastWatchdogActionAt: Date?
+    private var recentWatchdogActions: [Date] = []
+    private var watchdogFlapped = false
+
     func applicationDidFinishLaunching(_ note: Notification) {
+        VersionWatch.seedIfNeeded()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "⛏ …"
         tick()
@@ -19,13 +26,47 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     private func tick() {
-        let state = read()
+        // One process check per tick: pgrep for orphans only when the app is down.
+        let running = OfficialApp.isRunning
+        let orphan = running ? false : OfficialApp.orphanWorkerAlive()
+        let state = read(capture: UnknownCapture.isEnabled)
         if let b = statusItem.button {
             b.image = dot(statusColor(for: state.phase))
             b.imagePosition = .imageLeading
             b.title = title(for: state)
         }
-        statusItem.menu = buildMenu(for: state)
+        runWatchdog(state: state, running: running, orphan: orphan)
+        statusItem.menu = buildMenu(for: state, running: running, orphan: orphan)
+    }
+
+    /// Auto-recover a crashed / hung official app when the watchdog is enabled.
+    private func runWatchdog(state: MinerState, running: Bool, orphan: Bool) {
+        let now = Date()
+        if running { lastSeenRunningAt = now }
+        guard WatchdogSettings.enabled, !watchdogFlapped else { return }
+
+        let recentlyUp = lastSeenRunningAt.map { now.timeIntervalSince($0) < 120 } ?? false
+        let input = WatchdogInput(
+            enabled: true,
+            appRunning: running,
+            orphanAlive: orphan,
+            logStaleSeconds: state.lastLogTime.map { now.timeIntervalSince($0) },
+            recentlyUp: recentlyUp,
+            secondsSinceLastAction: lastWatchdogActionAt.map { now.timeIntervalSince($0) })
+        let action = Watchdog.decide(input)
+        guard action != .none else { return }
+
+        // Flap guard: too many recoveries in a short window → stop and warn.
+        recentWatchdogActions = recentWatchdogActions.filter { now.timeIntervalSince($0) < 900 }
+        recentWatchdogActions.append(now)
+        if recentWatchdogActions.count > 3 { watchdogFlapped = true; return }
+
+        lastWatchdogActionAt = now
+        switch action {
+        case .relaunch: DispatchQueue.global().async { OfficialApp.reapOrphans(); OfficialApp.launch() }
+        case .restart:  OfficialApp.restart()   // already dispatches to a background queue
+        case .none:     break
+        }
     }
 
     /// red = off · yellow = waiting for a lot (queued / transitional) · green = working.
@@ -50,11 +91,12 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         return img
     }
 
-    private func read() -> MinerState {
+    private func read(capture: Bool) -> MinerState {
         switch LogReader.readTail() {
         case .missing, .empty:
             var s = MinerState(); s.phase = .off; return s
         case .ok(let text, _):
+            if capture { UnknownCapture.capture(from: text) }
             return StateParser.parse(text: text)
         }
     }
@@ -79,7 +121,7 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         return " ="
     }
 
-    private func buildMenu(for s: MinerState) -> NSMenu {
+    private func buildMenu(for s: MinerState, running: Bool, orphan: Bool) -> NSMenu {
         let m = NSMenu()
         func row(_ text: String) { m.addItem(withTitle: text, action: nil, keyEquivalent: "") }
 
@@ -109,18 +151,28 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
             let it = NSMenuItem(title: title, action: sel, keyEquivalent: key)
             it.target = self; m.addItem(it)
         }
-        let appUp = OfficialApp.isRunning
-        let appStatus = NSMenuItem(title: "Official app: \(appUp ? "running" : "stopped")", action: nil, keyEquivalent: "")
-        appStatus.image = dot(appUp ? .systemGreen : .systemRed)
+        let appStatus = NSMenuItem(title: "Official app: \(running ? "running" : "stopped")", action: nil, keyEquivalent: "")
+        appStatus.image = dot(running ? .systemGreen : .systemRed)
         m.addItem(appStatus)
-        if appUp {
+        if running {
             action("Restart official app", #selector(restartOfficial))
             action("Quit official app", #selector(quitOfficial))
         } else {
             action("Launch official app", #selector(launchOfficial))
-            if OfficialApp.orphanWorkerAlive() {
+            if orphan {
                 action("⚠ Reap orphaned worker", #selector(reapOfficial))
             }
+        }
+        let wd = NSMenuItem(title: "Auto-restart on crash", action: #selector(toggleWatchdog), keyEquivalent: "")
+        wd.target = self
+        wd.image = dot(WatchdogSettings.enabled ? .systemGreen : .systemRed)
+        m.addItem(wd)
+        if watchdogFlapped {
+            action("⚠ Watchdog stopped (flapping) — re-enable", #selector(reenableWatchdog))
+        }
+        if let ch = VersionWatch.change {
+            m.addItem(NSMenuItem(title: "⚠ Official app \(ch.from) → \(ch.to) — verify parsing", action: nil, keyEquivalent: ""))
+            action("Mark version verified", #selector(dismissVersionWarning))
         }
 
         m.addItem(.separator())
@@ -134,6 +186,11 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         lid.target = self
         lid.image = dot(LidAwake.isEnabled ? .systemGreen : .systemRed)   // green = ON, red = OFF
         m.addItem(lid)
+        let cap = NSMenuItem(title: "Capture unknown lines", action: #selector(toggleCapture), keyEquivalent: "")
+        cap.target = self
+        cap.image = dot(UnknownCapture.isEnabled ? .systemGreen : .systemRed)
+        m.addItem(cap)
+        if UnknownCapture.isEnabled { action("Open capture file", #selector(openCapture)) }
         let pref = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         pref.target = self; m.addItem(pref)
         if repoDir() != nil {
@@ -160,6 +217,18 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPrefs() { prefs.show() }
+
+    @objc private func toggleWatchdog() {
+        WatchdogSettings.enabled.toggle()
+        watchdogFlapped = false; recentWatchdogActions.removeAll()   // fresh flap window
+        tick()
+    }
+    @objc private func reenableWatchdog() { watchdogFlapped = false; recentWatchdogActions.removeAll(); tick() }
+    @objc private func dismissVersionWarning() { VersionWatch.acknowledge(); tick() }
+    @objc private func toggleCapture() { UnknownCapture.isEnabled.toggle(); tick() }
+    @objc private func openCapture() {
+        NSWorkspace.shared.open(URL(fileURLWithPath: UnknownCapture.file))
+    }
 
     /// Toggle lid-closed-awake. Warn about heat/battery before enabling.
     @objc private func toggleLidAwake() {
@@ -239,9 +308,12 @@ final class MenuBarApp: NSObject, NSApplicationDelegate {
         p.currentDirectoryURL = URL(fileURLWithPath: repo)
         let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
         do {
-            try p.run(); p.waitUntilExit()
-            let out = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            return (p.terminationStatus, out)
+            try p.run()
+            // Drain the pipe BEFORE waiting: a build that outputs more than the
+            // pipe buffer would otherwise block writing while we wait → deadlock.
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            p.waitUntilExit()
+            return (p.terminationStatus, String(decoding: data, as: UTF8.self))
         } catch { return (-1, "\(error)") }
     }
 

@@ -19,5 +19,6 @@
 
 ## Modules
 - [LogReader](Sources/IOTAMonitorCore/LogReader.swift): resolution + tail of the current day's log
-- [StateParser](Sources/IOTAMonitorCore/StateParser.swift): log → MinerState (tested)
+- [StateParser](Sources/IOTAMonitorCore/StateParser.swift): log → MinerState + unknown-line capture (tested)
+- [Watchdog](Sources/IOTAMonitorCore/Watchdog.swift): pure crash/zombie recovery decision (tested)
 - [App](App/main.swift): NSStatusItem + Preferences (SMAppService)

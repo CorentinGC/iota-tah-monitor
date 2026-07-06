@@ -39,9 +39,13 @@ echo "Compiling…"
 swiftc -O \
   Sources/IOTAMonitorCore/LogReader.swift \
   Sources/IOTAMonitorCore/StateParser.swift \
+  Sources/IOTAMonitorCore/Watchdog.swift \
   App/Preferences.swift \
   App/OfficialApp.swift \
   App/LidAwake.swift \
+  App/UnknownCapture.swift \
+  App/VersionWatch.swift \
+  App/WatchdogSettings.swift \
   App/main.swift \
   -o "$BIN"
 

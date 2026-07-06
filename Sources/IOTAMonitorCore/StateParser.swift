@@ -119,6 +119,35 @@ enum StateParser {
         return s
     }
 
+    /// Tokens for lines we already understand — used to filter the unknown-line
+    /// capture so it only surfaces genuinely new shapes.
+    private static let recognizedTokens = [
+        "'position':", "'status':", "running speedtest", "failed to run speedtest",
+        "register.queue_state", "orchestrator request", "starting miner", "miner ready",
+        "resetting miner", "training.state", "fleet-telemetry", "attestation",
+        "telemetrybufferservice", "registration waitlist", "p2p", "node location",
+        "loss", "batch ", "layer ", "step ", "epoch ", "activated", "assigned",
+        "uploading", "downloading weights",
+    ]
+
+    /// Structural miner log lines (loguru `… | LEVEL | module - msg`) not matched
+    /// by any known rule — candidates for new parsing (e.g. the real training lines
+    /// that appear once assigned). Deduped by template (digits → '#'). Pure; the
+    /// caller decides whether to persist them. Returns (template, sample) pairs.
+    static func unrecognizedStructuralLines(in text: String) -> [(template: String, sample: String)] {
+        var out: [(String, String)] = []
+        var seen = Set<String>()
+        for raw in text.split(separator: "\n") {
+            let line = String(raw)
+            guard line.contains(" | ") else { continue }
+            let lower = line.lowercased()
+            if recognizedTokens.contains(where: { lower.contains($0) }) { continue }
+            let template = String(line.map { $0.isNumber ? "#" : $0 })
+            if seen.insert(template).inserted { out.append((template, strip(line))) }
+        }
+        return out
+    }
+
     /// Best-effort detection of an active-training line. No such line has been
     /// observed yet, so these patterns are provisional.
     private static func workDescription(in line: String) -> String? {
