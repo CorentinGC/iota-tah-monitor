@@ -6,10 +6,14 @@ import Foundation
 /// off explicitly. Enabling requires admin auth (prompted by osascript).
 enum LidAwake {
     /// Current state, read from `pmset -g` (no privileges needed).
-    static var isEnabled: Bool {
-        let out = run("/usr/bin/pmset", ["-g"]).out
-        for line in out.split(separator: "\n") where line.contains("SleepDisabled") {
-            return line.split(separator: " ").last == "1"
+    static var isEnabled: Bool { parseSleepDisabled(from: run("/usr/bin/pmset", ["-g"]).out) }
+
+    /// Parse `pmset -g` output. The line is `SleepDisabled\t\t1` — tab-separated,
+    /// so we must split on tabs and spaces, not spaces alone.
+    static func parseSleepDisabled(from pmsetOutput: String) -> Bool {
+        for line in pmsetOutput.split(separator: "\n") where line.contains("SleepDisabled") {
+            let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            return tokens.last.map(String.init) == "1"
         }
         return false
     }
